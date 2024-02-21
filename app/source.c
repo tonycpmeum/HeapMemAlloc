@@ -1,12 +1,13 @@
 #include "headers/stdheaders.h"
 #include "headers/memory.h"
 
-// docker images - a | grep none | awk '{ print $3; }' | xargs docker rmi --force
-
 int main() {
-   malloc_gay(16);
+   char* ptr = heap_alloc(10);
+   // printf("ptr = %p\n", ptr);
 
-   printf("HELLO WORLD abwad\n");
+   // uint32_t val = *(uint32_t*)(ptr - 4);
+   // printf("Heap mem size = %d\n", val);
    
+
    return 0;
 }
