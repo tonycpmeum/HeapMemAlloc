@@ -74,22 +74,17 @@ void *_find_free_block(uint32_t OGblock_size) {
    char *curr_block;
    uint32_t block_data, block_size = 0;
 
-   // stuck here
    do {
       curr_block = DISPLACE_STRT_PTR(block_size);
-      printf("O BLOCKSIZE %d\n", block_size);
-      printf("AT BLOCK %p\n", curr_block);
       if ((void*)curr_block > DISPLACE_STRT_PTR(HEAP_SIZE)) {
          printf("uhm\n");
          exit(1);
       }
       // 3 LSB used as trigger bits
       block_data = *(uint32_t*)curr_block;
-      block_size = block_data & 0xFFFFFFF8;
+      block_size += (block_data & 0xFFFFFFF8);
    // LSB == 1: allocated; LSB == 0: free;
    } while (block_data & 1 || OGblock_size > block_size);
-
-   printf("found %p\n", curr_block);
 
    return (void*)curr_block;
 }
@@ -104,10 +99,13 @@ void *heap_alloc(uint32_t payload) {
    void *ptr = _find_free_block(block_size);
    _update_block_data(ptr, block_size, true);
 
+   // displace ptr by 4B to payload
+   DISPLACE_PTR(void*, ptr, 4);
    return ptr;
 }
 
 void heap_free(void *ptr) {
+   DISPLACE_PTR(void*, ptr, -1 * 4);
    if (ptr < _HEAP_DATA.ptr || ptr > DISPLACE_STRT_PTR(HEAP_SIZE)) {
       printf("bonk\n");
       exit(1);
@@ -115,5 +113,5 @@ void heap_free(void *ptr) {
 
    uint32_t block_data = *(uint32_t*)ptr;
    
-   _update_block_data(ptr, block_data & 0xFFFFFFF8, block_data & 1);
+   _update_block_data(ptr, block_data & 0xFFFFFFF8, false);
 }
