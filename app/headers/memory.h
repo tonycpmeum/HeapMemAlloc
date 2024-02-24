@@ -22,9 +22,12 @@ void _update_block_data(void *ptr, uint32_t block_size, bool allocated) {
    uint32_t prev_bdata = *start;
    *start = block_size | allocated;
    *end = block_size | allocated;
-   printf("Header -> %d\n", *start);
 
    if (block_size == HEAP_SIZE) { return; }
+
+   if (!allocated) {
+      printf("\033[1;33m%p -> FREED\033[1;0m\n\n", (char *)ptr + 4);
+   }
 
    if (allocated) {
       // update separated free block 
@@ -37,10 +40,15 @@ void _update_block_data(void *ptr, uint32_t block_size, bool allocated) {
       if (start != _HEAP_DATA.ptr) {
          // coalescing free blocks, x = prev; y = next;
          uint32_t x_block_data = *(start - 1);
+
          if ((x_block_data & 1) == false) {
-            DISPLACE_PTR(uint32_t*, start, -1 * x_block_data);
+            // using macro == segfault ?? 
+            // DISPLACE_PTR(uint32_t*, start, -1 * x_block_data);
+            start = (uint32_t*) ((char*)start - x_block_data);
+
+            uint32_t temp = *start;
             *start += *end;
-            *end += *start;
+            *end += temp;
          }
       }
 
@@ -48,8 +56,9 @@ void _update_block_data(void *ptr, uint32_t block_size, bool allocated) {
          uint32_t y_block_data = *(end + 1);
          if ((y_block_data & 1) == false) {
             DISPLACE_PTR(uint32_t*, end, y_block_data);
+            uint32_t temp = *start;
             *start += *end;
-            *end += *start;
+            *end += temp;
          }
       }
    }
@@ -67,6 +76,7 @@ void _heap_init(void) {
    _HEAP_DATA.ptr = start;
    _update_block_data(start, HEAP_SIZE, 0);
 
+   printf("%p\n", _HEAP_DATA.ptr);
    printf("--- Heap init ---\n\n");
 }
 
